@@ -23,27 +23,43 @@ class GitHubApiHelper
 
         $userData = $userData->toArray();
         $userRepos = $userRepos->toArray();
-dd($userData);
+
         // Username and a link to the users website (if any is provided)
         $userName = $userData['login'];
         $usersWebSite = $userData['blog'];
+        $isUserHireable = $userData['hireable'] ? 'yes' : 'no';
 
-        $repoData = array();
+        $repoData = $programmingLanguages = array();
         // Amount and list of repositories (name, link and description)
+        $numberOfRepositories = count($userRepos);
         if ( isset($userRepos) && is_array($userRepos) )
         {
+            $count = 0;
             foreach ($userRepos as $key => $userRepo)
             {
                 $repoData[$key]['name'] = $userRepo['name'];
                 $repoData[$key]['html_url'] = $userRepo['html_url'] ?? '/';
                 $repoData[$key]['description'] = $userRepo['description'] ?? '/';
-dd($userRepo);
+
+                if (isset($userRepo['language']))
+                {
+                    $count++;
+                    $programmingLanguages[$userRepo['language']][] = $userRepo['language'];
+                }
                 // Percentages of programming languages for the account (Aggregated by primary
                 // language of the repository in ratio to the size of the repository
 //                dd($userRepo['name']);
             }
         }
-        dd($repoData);
+
+        if (isset($programmingLanguages) && is_array($programmingLanguages))
+        {
+            foreach ($programmingLanguages as $key => $programmingLanguage)
+            {
+                $languagePercentages[$key] = round( ((count($programmingLanguage) / $count) * 100), 2) . '%';
+            }
+        }
+
         return $repoData;
     }
 
