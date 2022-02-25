@@ -2,8 +2,6 @@
 
 namespace App\GitHub;
 
-use Symfony\Component\HttpClient\Exception\ClientException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class GitHubApiHelper
@@ -15,21 +13,24 @@ class GitHubApiHelper
         $this->httpClient = $httpClient;
     }
 
-    public function getOrganizationInfo(string $inputUserName): array
+    public function getGithubInfo(string $inputUserName): array
     {
 
-        $userData = $this->httpClient->request('GET', 'https://api.github.com/users/' . $inputUserName);
+        $user = $this->httpClient->request('GET', 'https://api.github.com/users/' . $inputUserName);
         $userRepos = $this->httpClient->request('GET', 'https://api.github.com/users/' . $inputUserName  . '/repos');
 
-        $userData = $userData->toArray();
+        $user = $user->toArray();
         $userRepos = $userRepos->toArray();
 
         // Username and a link to the users website (if any is provided)
-        $userName = $userData['login'];
-        $usersWebSite = $userData['blog'];
-        $isUserHireable = $userData['hireable'] ? 'yes' : 'no';
+        $userData['name'] = $user['name'] ?? '';
+        $userData['blog'] = $user['blog'] ?? '';
+        $userData['avatar_url'] = $user['avatar_url'] ?? '';
+        $userData['email'] = $user['email'] ?? '';
+        $userData['location'] = $user['location'] ?? '';
+        $userData['company'] = $user['company'] ?? '';
 
-        $repoData = $programmingLanguages = array();
+        $repoData = $languagePercentages = array();
         // Amount and list of repositories (name, link and description)
         $numberOfRepositories = count($userRepos);
         if ( isset($userRepos) && is_array($userRepos) )
@@ -40,6 +41,8 @@ class GitHubApiHelper
                 $repoData[$key]['name'] = $userRepo['name'];
                 $repoData[$key]['html_url'] = $userRepo['html_url'] ?? '/';
                 $repoData[$key]['description'] = $userRepo['description'] ?? '/';
+                $timeCreated = strtotime($userRepo['created_at']);
+                $repoData[$key]['created_at'] = $userRepo['created_at'] ? date("j, n, Y", $timeCreated) : 'N/A';
 
                 if (isset($userRepo['language']))
                 {
@@ -48,7 +51,6 @@ class GitHubApiHelper
                 }
                 // Percentages of programming languages for the account (Aggregated by primary
                 // language of the repository in ratio to the size of the repository
-//                dd($userRepo['name']);
             }
         }
 
@@ -56,31 +58,17 @@ class GitHubApiHelper
         {
             foreach ($programmingLanguages as $key => $programmingLanguage)
             {
-                $languagePercentages[$key] = round( ((count($programmingLanguage) / $count) * 100), 2) . '%';
+                $languagePercentages[$key] = round( ((count($programmingLanguage) / $count) * 100), 2);
             }
+
+            rsort($languagePercentages, true);
         }
 
-        return $repoData;
+        return array(
+            'language_percentages' => $languagePercentages,
+            'repo_data' => $repoData,
+            'user_data' => $userData
+        );
     }
 
-    /**
-     * @return GitHubRepository[]
-     */
-    public function getOrganizationRepositories(string $organization): array
-    {
-        $response = $this->httpClient->request('GET', sprintf('https://api.github.com/orgs/%s/repos', $organization));
-
-        $data = $response->toArray();
-
-        $repositories = [];
-        foreach ($data as $repoData) {
-            $repositories[] = new GitHubRepository(
-                $repoData['name'],
-                $repoData['html_url'],
-                \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s\Z', $repoData['updated_at'])
-            );
-        }
-
-        return $repositories;
-    }
 }

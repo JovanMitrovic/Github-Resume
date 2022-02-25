@@ -26,13 +26,22 @@ class MainController extends AbstractController
     public function createUserCV(Request $request, GitHubApiHelper $apiHelper)
     {
         $githubUsername = $request->get('github_username');
+        $data = [];
 
         try {
-            $organization = $apiHelper->getOrganizationInfo($githubUsername);
+            $data = $apiHelper->getGithubInfo($githubUsername);
         } catch (ClientException $exception) {
-            // problem
+            // TO DO
         }
 
-        dd('test');
+        if (empty($data))
+        {
+            $this->addFlash('error', 'No user found.');
+            return $this->redirectToRoute('app_homepage');
+        }
+
+        return $this->render('resume.html.twig', [
+            'data' => $data
+        ]);
     }
 }

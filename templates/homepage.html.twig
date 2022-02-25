@@ -1,9 +1,27 @@
-<h1>Homepage</h1>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Homepage</title>
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+    </head>
+    <body>
+        <div class="box">
+            <h1>MY GITHUB RÉSUMÉ</h1>
+            <hr>
+            <p>Create your perfect CV</p>
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-danger">
+                    {{ message }}
+                </div>
+            {% endfor %}
+            <form action="{{ path('create_user_cv') }}" method="POST" >
 
-<form action="{{ path('create_user_cv') }}" method="POST" >
+                <input type="text" name="github_username" placeholder="Type your Github Username...">
+                <input type="submit" name="" value="Generate">
+            </form>
+        </div>
+    </body>
+</html>
 
-    <input type="text" name="github_username">
 
-    <button class="btn btn-info" type="submit">Generate</button>
-
-</form>
